@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fitness Tracker</title>
+<!-- iOS home-screen app settings -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fitness">
+<meta name="theme-color" content="#0f1216">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%230f1216'/%3E%3Ctext x='50%25' y='54%25' font-size='96' text-anchor='middle' dominant-baseline='middle'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171b21; --panel2:#1e242c; --line:#2a323c;
+    --text:#e7ecf2; --muted:#93a0b0; --accent:#4f8cff; --accent2:#22c55e;
+    --warn:#f59e0b; --bad:#ef4444; --chip:#232a33;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:15px;line-height:1.45}
+  header{padding:calc(18px + env(safe-area-inset-top)) 20px 18px;border-bottom:1px solid var(--line);display:flex;
+    justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;background:var(--bg);z-index:20}
+  h1{font-size:19px;margin:0}
+  h2{font-size:16px;margin:0 0 12px}
+  h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap}
+  .tab{padding:8px 14px;border-radius:9px;background:var(--panel);border:1px solid var(--line);
+    color:var(--muted);cursor:pointer;font-size:14px;user-select:none}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  main{padding:20px;max-width:1100px;margin:0 auto}
+  .view{display:none}
+  .view.active{display:block}
+  .grid{display:grid;gap:14px}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .stat .num{font-size:26px;font-weight:700}
+  .stat .lbl{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .stat .sub{font-size:12px;margin-top:6px}
+  .up{color:var(--accent2)} .down{color:var(--bad)} .flat{color:var(--muted)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:12px;color:var(--muted)}
+  input,select{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    padding:9px 10px;border-radius:9px;font-size:14px;font-family:inherit;width:100%}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  input[type=date]{min-width:150px}
+  .w80{width:80px}.w70{width:70px}.w100{width:100px}.w120{width:120px}.w160{width:160px}.grow{flex:1;min-width:140px}
+  button{background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:9px;
+    cursor:pointer;font-size:14px;font-weight:600;font-family:inherit}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+  button.sm{padding:5px 10px;font-size:12.5px}
+  button.danger{background:transparent;color:var(--bad);border:1px solid transparent;padding:4px 8px}
+  button.danger:hover{border-color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td.num,th.num{text-align:right}
+  tr:hover td{background:var(--panel2)}
+  .chip{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:20px;
+    padding:3px 10px;font-size:12px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .empty{color:var(--muted);text-align:center;padding:26px;font-size:13.5px}
+  .bar{height:7px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:6px}
+  .bar > span{display:block;height:100%;background:var(--accent)}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.split{grid-template-columns:1fr}}
+  .chartbox{position:relative;height:260px}
+  .flexbtn{display:flex;gap:8px;flex-wrap:wrap}
+  .goalgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .pill-macro{font-size:12px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent2);
+    color:#04210f;padding:10px 18px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1}
+  a.link{color:var(--accent);cursor:pointer;text-decoration:underline}
+  hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+  tfoot td{border-top:2px solid var(--line);border-bottom:none}
+  .catchip{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏋️ Fitness &amp; Diet Tracker</h1>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-view="dashboard">Dashboard</div>
+    <div class="tab" data-view="workouts">Workouts</div>
+    <div class="tab" data-view="nutrition">Nutrition</div>
+    <div class="tab" data-view="body">Body</div>
+    <div class="tab" data-view="settings">Goals &amp; Data</div>
+  </div>
+</header>
+
+<main>
+  <!-- DASHBOARD -->
+  <section class="view active" id="dashboard">
+    <div class="grid cards" id="statCards" style="margin-bottom:16px"></div>
+    <div class="split">
+      <div class="panel">
+        <h3>Bodyweight trend</h3>
+        <div class="chartbox"><canvas id="chartWeight"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Daily calories (last 14 days)</h3>
+        <div class="chartbox"><canvas id="chartCals"></canvas></div>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel">
+        <h3>Workout volume per week</h3>
+        <div class="chartbox"><canvas id="chartVolume"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Today's macros vs goal</h3>
+        <div class="chartbox"><canvas id="chartMacros"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Strength progress — pick an exercise</h3>
+      <div class="row" style="margin-bottom:10px">
+        <div class="field grow"><select id="progExercise"></select></div>
+      </div>
+      <div class="chartbox"><canvas id="chartStrength"></canvas></div>
+    </div>
+  </section>
+
+  <!-- WORKOUTS -->
+  <section class="view" id="workouts">
+    <div class="panel">
+      <h2>Log a set</h2>
+      <div class="row">
+        <div class="field"><label>Date</label><input type="date" id="wDate"></div>
+        <div class="field grow"><label>Exercise</label>
+          <input list="exList" id="wExercise" placeholder="e.g. Bench Press" autocomplete="off">
+          <datalist id="exList"></datalist>
+        </div>
+        <div class="field"><label>Type</label>
+          <select id="wType" class="w120">
+            <option>Strength</option><option>Cardio</option><option>Bodyweight</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Weight (kg)</label><input type="number" id="wWeight" class="w100" step="0.5" placeholder="0"></div>
+        <div class="field"><label>Reps</label><input type="number" id="wReps" class="w80" placeholder="0"></div>
+        <div class="field"><label>Sets</label><input type="number" id="wSets" class="w70" value="1"></div>
+        <div class="field"><label>RPE</label><input type="number" id="wRpe" class="w70" step="0.5" min="1" max="10" placeholder="—"></div>
+        <div class="field"><button id="addWorkout">Add set</button></div>
+      </div>
+      <p class="muted" style="font-size:12.5px;margin:10px 0 0">Tip: for cardio, put minutes in Reps and leave weight blank. Volume = weight × reps × sets.</p>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h2 style="margin:0">Workout log</h2>
+        <input type="text" id="wSearch" placeholder="Filter by exercise…" class="w160" style="width:200px">
+      </div>
+      <div id="workoutTable"></div>
+    </div>
+  </section>
+
+  <!-- NUTRITION -->
+  <section class="view" id="nutrition">
+    <div class="panel">
+      <h2>Build a meal — nutrition auto-calculated</h2>
+      <div class="row">
+        <div class="field"><label>Date</label><input type="date" id="nDate"></div>
+        <div class="field"><label>Meal</label>
+          <select id="nMeal" class="w120"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
+        </div>
+        <div class="field grow"><label>Dish / menu name (optional)</label><input type="text" id="nMenu" placeholder="e.g. Chicken rice bowl"></div>
+        <div class="field"><label>Load saved recipe</label><select id="nRecipe" class="w160"></select></div>
+      </div>
+      <hr>
+      <h3>Add ingredient / dish</h3>
+      <div class="row">
+        <div class="field grow"><label>Search food</label>
+          <input type="text" id="nIng" list="foodList" placeholder="type to search 130+ foods…" autocomplete="off">
+          <datalist id="foodList"></datalist>
+        </div>
+        <div class="field"><label>Grams</label><input type="number" id="nGrams" class="w100" placeholder="0"></div>
+        <div class="field"><label>&nbsp;</label><button class="ghost sm" id="nServing" title="fill in a typical serving size">1 serving</button></div>
+        <div class="field"><label>&nbsp;</label><button id="nAddIng">Add</button></div>
+      </div>
+      <div id="nIngHint" class="muted" style="font-size:12px;min-height:16px;margin-top:4px"></div>
+      <div style="margin-top:4px"><a class="link" id="nCustomToggle">+ Can't find it? Add a custom food</a></div>
+      <div id="nCustomBox" style="display:none;margin-top:8px">
+        <div class="row">
+          <div class="field grow"><label>Food name</label><input type="text" id="cName" placeholder="e.g. Grandma's soup"></div>
+          <div class="field"><label>Calories</label><input type="number" id="cCals" class="w100" placeholder="0"></div>
+          <div class="field"><label>Protein</label><input type="number" id="cProt" class="w80" placeholder="0"></div>
+          <div class="field"><label>Carbs</label><input type="number" id="cCarb" class="w80" placeholder="0"></div>
+          <div class="field"><label>Fat</label><input type="number" id="cFat" class="w70" placeholder="0"></div>
+          <div class="field"><label>&nbsp;</label><button class="ghost" id="cAdd">Add custom</button></div>
+        </div>
+        <p class="muted" style="font-size:12px;margin:6px 0 0">Enter the total nutrition you ate (not per 100g).</p>
+      </div>
+      <div id="builderItems" style="margin-top:14px"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="logMeal">✓ Log this meal</button>
+        <button class="ghost" id="saveRecipe">★ Save as recipe</button>
+        <button class="ghost" id="clearBuilder">Clear</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:10px">Values are estimates per 100g of common foods — great for tracking trends, not lab-exact. Tap a food, then "1 serving" to fill a typical portion.</p>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2 style="margin:0">Day view</h2>
+        <div class="field"><input type="date" id="nViewDate" class="w160"></div>
+      </div>
+      <div class="grid cards" id="dayTotals" style="margin-bottom:14px"></div>
+      <div id="foodTable"></div>
+    </div>
+    <div class="panel" id="recipePanel">
+      <h2>Saved recipes</h2>
+      <div id="recipeList"></div>
+    </div>
+  </section>
+
+  <!-- BODY -->
+  <section class="view" id="body">
+    <div class="panel">
+      <h2>Log body metrics</h2>
+      <div class="row">
+        <div class="field"><label>Date</label><input type="date" id="bDate"></div>
+        <div class="field"><label>Weight (kg)</label><input type="number" id="bWeight" class="w100" step="0.1" placeholder="0"></div>
+        <div class="field"><label>Body fat %</label><input type="number" id="bFat" class="w100" step="0.1" placeholder="—"></div>
+        <div class="field"><label>Waist (cm)</label><input type="number" id="bWaist" class="w100" step="0.1" placeholder="—"></div>
+        <div class="field"><label>Note</label><input type="text" id="bNote" class="grow" placeholder="optional"></div>
+        <div class="field"><button id="addBody">Add</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>History</h2>
+      <div id="bodyTable"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="settings">
+    <div class="panel">
+      <h2>Daily goals</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Set targets to power the progress bars and dashboard. Leave blank to ignore.</p>
+      <div class="goalgrid">
+        <div class="field"><label>Calorie target</label><input type="number" id="gCals" placeholder="e.g. 2200"></div>
+        <div class="field"><label>Protein target (g)</label><input type="number" id="gProt" placeholder="e.g. 160"></div>
+        <div class="field"><label>Carbs target (g)</label><input type="number" id="gCarb" placeholder="e.g. 220"></div>
+        <div class="field"><label>Fat target (g)</label><input type="number" id="gFat" placeholder="e.g. 70"></div>
+        <div class="field"><label>Goal weight (kg)</label><input type="number" id="gWeight" step="0.1" placeholder="e.g. 75"></div>
+        <div class="field"><label>Workouts / week</label><input type="number" id="gWorkouts" placeholder="e.g. 4"></div>
+      </div>
+      <div style="margin-top:14px"><button id="saveGoals">Save goals</button></div>
+    </div>
+    <div class="panel">
+      <h2>Backup &amp; data</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Everything is stored privately in this browser. Export regularly to keep a backup or move to another device.</p>
+      <div class="flexbtn">
+        <button class="ghost" id="exportBtn">⬇ Export backup (.json)</button>
+        <button class="ghost" id="importBtn">⬆ Import backup</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="ghost" id="sampleBtn">✨ Load sample data</button>
+        <button class="danger" id="wipeBtn">Delete all data</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const KEY="fitTracker.v1";
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const $=id=>document.getElementById(id);
+const fmt=n=>(Math.round(n*10)/10).toLocaleString();
+const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
+
+let db=load();
+function load(){
+  try{const d=JSON.parse(localStorage.getItem(KEY));if(d){d.workouts=d.workouts||[];d.foods=d.foods||[];d.body=d.body||[];d.goals=d.goals||{};d.recipes=d.recipes||[];return d;}}catch(e){}
+  return {workouts:[],foods:[],body:[],goals:{},recipes:[]};
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600);}
+
+// ---- Tabs ----
+$("tabs").addEventListener("click",e=>{
+  const t=e.target.closest(".tab");if(!t)return;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");$(t.dataset.view).classList.add("active");
+  renderAll();
+});
+
+// ---- Init date inputs ----
+["wDate","nDate","bDate","nViewDate"].forEach(id=>$(id).value=todayISO());
+
+// ---- Workouts ----
+$("addWorkout").onclick=()=>{
+  const ex=$("wExercise").value.trim();
+  if(!ex){toast("Enter an exercise");return;}
+  db.workouts.push({id:uid(),date:$("wDate").value,exercise:ex,type:$("wType").value,
+    weight:num($("wWeight").value),reps:num($("wReps").value),
+    sets:num($("wSets").value)||1,rpe:num($("wRpe").value)});
+  save();$("wExercise").value="";$("wWeight").value="";$("wReps").value="";$("wRpe").value="";
+  toast("Set logged");renderAll();
+};
+$("wSearch").oninput=renderWorkoutTable;
+
+function renderWorkoutTable(){
+  const q=$("wSearch").value.toLowerCase();
+  let rows=[...db.workouts].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  if(q)rows=rows.filter(r=>r.exercise.toLowerCase().includes(q));
+  if(!rows.length){$("workoutTable").innerHTML='<div class="empty">No sets logged yet. Add your first set above.</div>';return;}
+  let h='<table><thead><tr><th>Date</th><th>Exercise</th><th>Type</th><th class="num">Weight</th><th class="num">Reps</th><th class="num">Sets</th><th class="num">Volume</th><th class="num">RPE</th><th></th></tr></thead><tbody>';
+  rows.slice(0,300).forEach(r=>{
+    const vol=r.weight*r.reps*r.sets;
+    h+=`<tr><td>${r.date}</td><td>${esc(r.exercise)}</td><td><span class="chip">${r.type}</span></td>
+      <td class="num">${r.weight?fmt(r.weight):"—"}</td><td class="num">${r.reps||"—"}</td>
+      <td class="num">${r.sets}</td><td class="num">${vol?fmt(vol):"—"}</td>
+      <td class="num">${r.rpe||"—"}</td>
+      <td class="num"><button class="danger sm" onclick="delItem('workouts','${r.id}')">✕</button></td></tr>`;
+  });
+  h+='</tbody></table>';
+  $("workoutTable").innerHTML=h;
+}
+
+// ---- Food database (per 100g: kcal, protein, carbs, fat; sv = typical serving grams) ----
+// n=name, cat=category. Values are practical estimates for tracking.
+const FOOD_DB=[
+// Whole ingredients
+{n:"Chicken breast, cooked",cat:"Ingredient",kcal:165,p:31,c:0,f:3.6,sv:150},
+{n:"Chicken thigh, cooked",cat:"Ingredient",kcal:209,p:26,c:0,f:11,sv:150},
+{n:"Beef, lean cooked",cat:"Ingredient",kcal:217,p:26,c:0,f:12,sv:150},
+{n:"Ground beef, cooked",cat:"Ingredient",kcal:250,p:26,c:0,f:15,sv:120},
+{n:"Pork loin, cooked",cat:"Ingredient",kcal:242,p:27,c:0,f:14,sv:150},
+{n:"Ground pork, cooked",cat:"Ingredient",kcal:297,p:26,c:0,f:21,sv:120},
+{n:"Pork belly, cooked",cat:"Ingredient",kcal:518,p:17,c:0,f:50,sv:100},
+{n:"Salmon, cooked",cat:"Ingredient",kcal:208,p:20,c:0,f:13,sv:150},
+{n:"Tuna, canned in water",cat:"Ingredient",kcal:116,p:26,c:0,f:1,sv:100},
+{n:"Shrimp, cooked",cat:"Ingredient",kcal:99,p:24,c:0,f:0.3,sv:120},
+{n:"Egg, whole",cat:"Ingredient",kcal:155,p:13,c:1.1,f:11,sv:50},
+{n:"Egg white",cat:"Ingredient",kcal:52,p:11,c:0.7,f:0.2,sv:33},
+{n:"Tofu, firm",cat:"Ingredient",kcal:144,p:15,c:4,f:8,sv:150},
+{n:"Whey protein powder",cat:"Ingredient",kcal:400,p:80,c:8,f:6,sv:30},
+{n:"Greek yogurt, nonfat",cat:"Ingredient",kcal:59,p:10,c:3.6,f:0.4,sv:170},
+{n:"Milk, whole",cat:"Ingredient",kcal:61,p:3.2,c:4.8,f:3.3,sv:250},
+{n:"Milk, skim",cat:"Ingredient",kcal:34,p:3.4,c:5,f:0.1,sv:250},
+{n:"Cheddar cheese",cat:"Ingredient",kcal:403,p:25,c:1.3,f:33,sv:30},
+{n:"White rice, cooked",cat:"Ingredient",kcal:130,p:2.7,c:28,f:0.3,sv:200},
+{n:"Jasmine rice, cooked",cat:"Ingredient",kcal:130,p:2.7,c:28,f:0.3,sv:200},
+{n:"Brown rice, cooked",cat:"Ingredient",kcal:123,p:2.7,c:26,f:1,sv:200},
+{n:"Sticky rice, cooked",cat:"Ingredient",kcal:116,p:2.4,c:25,f:0.2,sv:150},
+{n:"White bread",cat:"Ingredient",kcal:265,p:9,c:49,f:3.2,sv:30},
+{n:"Pasta, cooked",cat:"Ingredient",kcal:158,p:6,c:31,f:0.9,sv:200},
+{n:"Oats, dry",cat:"Ingredient",kcal:389,p:17,c:66,f:7,sv:50},
+{n:"Potato, boiled",cat:"Ingredient",kcal:87,p:2,c:20,f:0.1,sv:150},
+{n:"Sweet potato",cat:"Ingredient",kcal:86,p:1.6,c:20,f:0.1,sv:150},
+{n:"Banana",cat:"Fruit",kcal:89,p:1.1,c:23,f:0.3,sv:120},
+{n:"Apple",cat:"Fruit",kcal:52,p:0.3,c:14,f:0.2,sv:180},
+{n:"Avocado",cat:"Fruit",kcal:160,p:2,c:9,f:15,sv:100},
+{n:"Olive oil",cat:"Ingredient",kcal:884,p:0,c:0,f:100,sv:14},
+{n:"Butter",cat:"Ingredient",kcal:717,p:0.9,c:0.1,f:81,sv:14},
+{n:"Peanut butter",cat:"Ingredient",kcal:588,p:25,c:20,f:50,sv:32},
+{n:"Almonds",cat:"Ingredient",kcal:579,p:21,c:22,f:50,sv:30},
+{n:"Broccoli",cat:"Vegetable",kcal:34,p:2.8,c:7,f:0.4,sv:100},
+{n:"Mixed vegetables",cat:"Vegetable",kcal:65,p:2.6,c:13,f:0.4,sv:100},
+{n:"Lettuce / salad greens",cat:"Vegetable",kcal:15,p:1.4,c:2.9,f:0.2,sv:80},
+// Thai
+{n:"Pad Thai",cat:"Thai",kcal:180,p:8,c:25,f:5,sv:350},
+{n:"Pad Kra Pao (basil pork, topping)",cat:"Thai",kcal:240,p:15,c:6,f:17,sv:200},
+{n:"Green curry, chicken",cat:"Thai",kcal:130,p:8,c:6,f:8,sv:250},
+{n:"Red curry",cat:"Thai",kcal:130,p:8,c:6,f:8,sv:250},
+{n:"Massaman curry",cat:"Thai",kcal:180,p:9,c:10,f:12,sv:250},
+{n:"Tom Yum Goong",cat:"Thai",kcal:60,p:6,c:4,f:3,sv:300},
+{n:"Tom Kha Gai",cat:"Thai",kcal:100,p:6,c:5,f:7,sv:300},
+{n:"Som Tam (papaya salad)",cat:"Thai",kcal:60,p:2,c:12,f:1,sv:200},
+{n:"Khao Man Gai (chicken rice)",cat:"Thai",kcal:180,p:9,c:22,f:6,sv:350},
+{n:"Khao Pad (fried rice)",cat:"Thai",kcal:170,p:6,c:24,f:5,sv:300},
+{n:"Larb Moo (minced pork salad)",cat:"Thai",kcal:190,p:15,c:6,f:12,sv:200},
+{n:"Moo Ping (grilled pork skewer)",cat:"Thai",kcal:250,p:20,c:6,f:16,sv:100},
+{n:"Gai Yang (grilled chicken)",cat:"Thai",kcal:200,p:25,c:2,f:10,sv:150},
+{n:"Khao Soi",cat:"Thai",kcal:150,p:7,c:15,f:7,sv:350},
+{n:"Boat noodles",cat:"Thai",kcal:90,p:6,c:9,f:3,sv:350},
+{n:"Pad See Ew",cat:"Thai",kcal:190,p:8,c:26,f:6,sv:350},
+{n:"Mango sticky rice",cat:"Thai",kcal:200,p:3,c:40,f:4,sv:250},
+{n:"Thai iced tea (cha yen)",cat:"Thai",kcal:100,p:1,c:18,f:3,sv:300},
+// Japanese
+{n:"Sushi, assorted",cat:"Japanese",kcal:145,p:6,c:27,f:1,sv:200},
+{n:"Salmon nigiri",cat:"Japanese",kcal:140,p:6,c:22,f:3,sv:150},
+{n:"Ramen (with broth)",cat:"Japanese",kcal:90,p:5,c:12,f:3,sv:500},
+{n:"Chicken katsu",cat:"Japanese",kcal:260,p:16,c:18,f:14,sv:200},
+{n:"Tonkatsu (pork)",cat:"Japanese",kcal:290,p:17,c:14,f:19,sv:200},
+{n:"Teriyaki chicken",cat:"Japanese",kcal:190,p:16,c:12,f:8,sv:200},
+{n:"Gyoza",cat:"Japanese",kcal:210,p:8,c:22,f:10,sv:150},
+{n:"Miso soup",cat:"Japanese",kcal:40,p:3,c:4,f:1,sv:200},
+{n:"Udon",cat:"Japanese",kcal:130,p:5,c:26,f:1,sv:400},
+{n:"Onigiri (rice ball)",cat:"Japanese",kcal:170,p:3,c:35,f:1,sv:120},
+{n:"Edamame",cat:"Japanese",kcal:120,p:11,c:10,f:5,sv:100},
+// Chinese
+{n:"Chinese fried rice",cat:"Chinese",kcal:170,p:6,c:24,f:5,sv:300},
+{n:"Sweet and sour pork",cat:"Chinese",kcal:240,p:10,c:25,f:11,sv:250},
+{n:"Kung Pao chicken",cat:"Chinese",kcal:200,p:14,c:10,f:12,sv:250},
+{n:"Mapo tofu",cat:"Chinese",kcal:150,p:9,c:6,f:10,sv:250},
+{n:"Steamed dumplings",cat:"Chinese",kcal:200,p:9,c:24,f:8,sv:150},
+{n:"Chow mein",cat:"Chinese",kcal:190,p:7,c:25,f:7,sv:300},
+{n:"Char siu pork",cat:"Chinese",kcal:240,p:20,c:12,f:12,sv:150},
+{n:"Spring roll (fried)",cat:"Chinese",kcal:250,p:5,c:25,f:14,sv:80},
+{n:"Wonton soup",cat:"Chinese",kcal:70,p:5,c:8,f:2,sv:350},
+// Korean
+{n:"Bibimbap",cat:"Korean",kcal:130,p:6,c:18,f:4,sv:450},
+{n:"Bulgogi beef",cat:"Korean",kcal:210,p:15,c:10,f:12,sv:200},
+{n:"Kimchi",cat:"Korean",kcal:15,p:1,c:2,f:0.5,sv:50},
+{n:"Kimchi fried rice",cat:"Korean",kcal:160,p:5,c:24,f:5,sv:300},
+{n:"Tteokbokki",cat:"Korean",kcal:160,p:3,c:33,f:2,sv:300},
+{n:"Korean fried chicken",cat:"Korean",kcal:280,p:18,c:16,f:16,sv:200},
+{n:"Japchae (glass noodles)",cat:"Korean",kcal:150,p:4,c:24,f:5,sv:250},
+{n:"Samgyeopsal (pork belly)",cat:"Korean",kcal:518,p:17,c:0,f:50,sv:150},
+{n:"Sundubu jjigae (tofu stew)",cat:"Korean",kcal:70,p:6,c:4,f:4,sv:400},
+// Western
+{n:"Cheeseburger",cat:"Western",kcal:250,p:15,c:19,f:13,sv:250},
+{n:"Pizza (cheese)",cat:"Western",kcal:266,p:11,c:33,f:10,sv:300},
+{n:"Caesar salad w/ chicken",cat:"Western",kcal:130,p:9,c:5,f:8,sv:300},
+{n:"Spaghetti bolognese",cat:"Western",kcal:150,p:8,c:18,f:5,sv:400},
+{n:"Steak, grilled",cat:"Western",kcal:271,p:25,c:0,f:19,sv:200},
+{n:"French fries",cat:"Western",kcal:312,p:3.4,c:41,f:15,sv:150},
+{n:"Scrambled eggs",cat:"Western",kcal:150,p:10,c:1.6,f:11,sv:120},
+{n:"Pancakes",cat:"Western",kcal:227,p:6,c:28,f:9,sv:150},
+{n:"Club sandwich",cat:"Western",kcal:230,p:12,c:20,f:11,sv:250},
+{n:"Fried chicken",cat:"Western",kcal:290,p:19,c:9,f:20,sv:150},
+// Packaged / fast food
+{n:"Big Mac",cat:"Packaged",kcal:257,p:12,c:19,f:15,sv:214},
+{n:"Instant noodles (dry)",cat:"Packaged",kcal:450,p:10,c:60,f:18,sv:60},
+{n:"Protein bar",cat:"Packaged",kcal:350,p:30,c:35,f:10,sv:60},
+{n:"Potato chips",cat:"Packaged",kcal:536,p:7,c:53,f:34,sv:30},
+{n:"Coca-Cola",cat:"Packaged",kcal:42,p:0,c:10.6,f:0,sv:330},
+{n:"Orange juice",cat:"Packaged",kcal:45,p:0.7,c:10,f:0.2,sv:250},
+{n:"Milk chocolate",cat:"Packaged",kcal:535,p:8,c:59,f:30,sv:40},
+{n:"Ice cream",cat:"Packaged",kcal:207,p:3.5,c:24,f:11,sv:100},
+{n:"Croissant",cat:"Packaged",kcal:406,p:8,c:46,f:21,sv:60},
+{n:"Donut",cat:"Packaged",kcal:452,p:5,c:51,f:25,sv:70}
+];
+const r1=n=>Math.round(n*10)/10;
+function getFood(name){if(!name)return null;const k=name.trim().toLowerCase();return FOOD_DB.find(x=>x.n.toLowerCase()===k)||null;}
+function refreshFoodList(){
+  $("foodList").innerHTML=FOOD_DB.map(x=>`<option value="${esc(x.n)}">${x.cat} · ${x.kcal} kcal/100g</option>`).join("");
+}
+
+// ---- Meal builder ----
+let curItems=[];
+function builderTotals(){return curItems.reduce((s,i)=>({kcal:s.kcal+i.kcal,p:s.p+i.p,c:s.c+i.c,f:s.f+i.f}),{kcal:0,p:0,c:0,f:0});}
+function renderBuilder(){
+  const box=$("builderItems");
+  if(!curItems.length){box.innerHTML='<div class="empty">No ingredients yet. Search a food above, enter grams, and macros fill in automatically.</div>';return;}
+  const t=builderTotals();
+  let h='<table><thead><tr><th>Item</th><th class="num">Amount</th><th class="num">Cals</th><th class="num">P</th><th class="num">C</th><th class="num">F</th><th></th></tr></thead><tbody>';
+  curItems.forEach((i,idx)=>{
+    h+=`<tr><td>${esc(i.name)}</td><td class="num">${i.grams?i.grams+" g":"—"}</td>
+      <td class="num">${fmt(i.kcal)}</td><td class="num">${fmt(i.p)}</td><td class="num">${fmt(i.c)}</td><td class="num">${fmt(i.f)}</td>
+      <td class="num"><button class="danger sm" onclick="rmBuilder(${idx})">✕</button></td></tr>`;
+  });
+  h+=`</tbody><tfoot><tr style="font-weight:700"><td>Total</td><td></td><td class="num">${fmt(t.kcal)}</td><td class="num">${fmt(t.p)}</td><td class="num">${fmt(t.c)}</td><td class="num">${fmt(t.f)}</td><td></td></tr></tfoot></table>`;
+  box.innerHTML=h;
+}
+window.rmBuilder=idx=>{curItems.splice(idx,1);renderBuilder();};
+
+$("nIng").oninput=()=>{
+  const food=getFood($("nIng").value);
+  $("nIngHint").textContent=food?`≈ ${food.kcal} kcal · ${food.p}g protein per 100g${food.sv?`  ·  typical serving ~${food.sv} g`:""}`:"";
+};
+$("nServing").onclick=()=>{
+  const food=getFood($("nIng").value);
+  if(food&&food.sv){$("nGrams").value=food.sv;}else toast("Pick a food first");
+};
+$("nAddIng").onclick=()=>{
+  const food=getFood($("nIng").value);
+  if(!food){toast("Not in list — use 'Add custom food'");return;}
+  const g=num($("nGrams").value);
+  if(!g){toast("Enter grams");return;}
+  curItems.push({name:food.n,grams:g,kcal:r1(food.kcal*g/100),p:r1(food.p*g/100),c:r1(food.c*g/100),f:r1(food.f*g/100)});
+  $("nIng").value="";$("nGrams").value="";$("nIngHint").textContent="";renderBuilder();$("nIng").focus();
+};
+$("nCustomToggle").onclick=()=>{const b=$("nCustomBox");b.style.display=b.style.display==="none"?"block":"none";};
+$("cAdd").onclick=()=>{
+  const n=$("cName").value.trim();
+  if(!n){toast("Name the food");return;}
+  curItems.push({name:n,grams:null,kcal:num($("cCals").value),p:num($("cProt").value),c:num($("cCarb").value),f:num($("cFat").value)});
+  ["cName","cCals","cProt","cCarb","cFat"].forEach(id=>$(id).value="");renderBuilder();
+};
+$("clearBuilder").onclick=()=>{curItems=[];$("nMenu").value="";renderBuilder();};
+$("logMeal").onclick=()=>{
+  if(!curItems.length){toast("Add ingredients first");return;}
+  const t=
