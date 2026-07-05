@@ -88,6 +88,7 @@
     <div class="tab active" data-view="dashboard">Dashboard</div>
     <div class="tab" data-view="workouts">Workouts</div>
     <div class="tab" data-view="nutrition">Nutrition</div>
+    <div class="tab" data-view="alcohol">Alcohol</div>
     <div class="tab" data-view="body">Body</div>
     <div class="tab" data-view="settings">Goals &amp; Data</div>
   </div>
@@ -129,32 +130,46 @@
   <!-- WORKOUTS -->
   <section class="view" id="workouts">
     <div class="panel">
-      <h2>Log a set</h2>
+      <h2>Build your workout — it remembers your last numbers</h2>
       <div class="row">
         <div class="field"><label>Date</label><input type="date" id="wDate"></div>
+        <div class="field"><label>Load saved routine</label><select id="wRoutine" class="w160"></select></div>
+      </div>
+      <hr>
+      <h3>Add a set</h3>
+      <div class="row">
         <div class="field grow"><label>Exercise</label>
-          <input list="exList" id="wExercise" placeholder="e.g. Bench Press" autocomplete="off">
+          <input list="exList" id="wExercise" placeholder="type to search 60+ exercises…" autocomplete="off">
           <datalist id="exList"></datalist>
         </div>
         <div class="field"><label>Type</label>
-          <select id="wType" class="w120">
-            <option>Strength</option><option>Cardio</option><option>Bodyweight</option><option>Other</option>
-          </select>
+          <select id="wType" class="w120"><option>Strength</option><option>Cardio</option><option>Bodyweight</option><option>Other</option></select>
         </div>
         <div class="field"><label>Weight (kg)</label><input type="number" id="wWeight" class="w100" step="0.5" placeholder="0"></div>
         <div class="field"><label>Reps</label><input type="number" id="wReps" class="w80" placeholder="0"></div>
         <div class="field"><label>Sets</label><input type="number" id="wSets" class="w70" value="1"></div>
         <div class="field"><label>RPE</label><input type="number" id="wRpe" class="w70" step="0.5" min="1" max="10" placeholder="—"></div>
-        <div class="field"><button id="addWorkout">Add set</button></div>
+        <div class="field"><label>&nbsp;</label><button id="wAddSet">Add set</button></div>
       </div>
-      <p class="muted" style="font-size:12.5px;margin:10px 0 0">Tip: for cardio, put minutes in Reps and leave weight blank. Volume = weight × reps × sets.</p>
+      <div id="wHint" class="muted" style="font-size:12px;min-height:16px;margin-top:4px"></div>
+      <div id="wBuilder" style="margin-top:14px"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="wSave">✓ Save workout</button>
+        <button class="ghost" id="wSaveRoutine">★ Save as routine</button>
+        <button class="ghost" id="wClear">Clear</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:10px">Pick an exercise and your last weight/reps auto-fill — just bump the weight to progress. For cardio, put minutes in Reps. Volume = weight × reps × sets.</p>
     </div>
     <div class="panel">
       <div class="row" style="justify-content:space-between;margin-bottom:8px">
         <h2 style="margin:0">Workout log</h2>
-        <input type="text" id="wSearch" placeholder="Filter by exercise…" class="w160" style="width:200px">
+        <input type="text" id="wSearch" placeholder="Filter by exercise…" style="width:200px">
       </div>
       <div id="workoutTable"></div>
+    </div>
+    <div class="panel">
+      <h2>Saved routines</h2>
+      <div id="routineList"></div>
     </div>
   </section>
 
@@ -174,7 +189,7 @@
       <h3>Add ingredient / dish</h3>
       <div class="row">
         <div class="field grow"><label>Search food</label>
-          <input type="text" id="nIng" list="foodList" placeholder="type to search 130+ foods…" autocomplete="off">
+          <input type="text" id="nIng" list="foodList" placeholder="type to search 100+ foods…" autocomplete="off">
           <datalist id="foodList"></datalist>
         </div>
         <div class="field"><label>Grams</label><input type="number" id="nGrams" class="w100" placeholder="0"></div>
@@ -213,6 +228,42 @@
     <div class="panel" id="recipePanel">
       <h2>Saved recipes</h2>
       <div id="recipeList"></div>
+    </div>
+  </section>
+
+  <!-- ALCOHOL -->
+  <section class="view" id="alcohol">
+    <div class="grid cards" id="alcStats" style="margin-bottom:16px"></div>
+    <div class="panel">
+      <h2>Log a drink</h2>
+      <div class="row">
+        <div class="field"><label>Date</label><input type="date" id="aDate"></div>
+        <div class="field grow"><label>Drink</label>
+          <input type="text" id="aDrink" list="drinkList" placeholder="search beers, wine, spirits, cocktails…" autocomplete="off">
+          <datalist id="drinkList"></datalist>
+        </div>
+        <div class="field"><label>Quantity</label><input type="number" id="aQty" class="w80" value="1" step="1" min="1"></div>
+        <div class="field"><label>&nbsp;</label><button id="aAdd">Add</button></div>
+      </div>
+      <div id="aHint" class="muted" style="font-size:12px;min-height:16px;margin-top:4px"></div>
+      <div style="margin-top:4px"><a class="link" id="aCustomToggle">+ Add a custom drink</a></div>
+      <div id="aCustomBox" style="display:none;margin-top:8px">
+        <div class="row">
+          <div class="field grow"><label>Drink name</label><input type="text" id="acName" placeholder="e.g. Local craft beer"></div>
+          <div class="field"><label>Std drinks</label><input type="number" id="acStd" class="w80" step="0.1" placeholder="1"></div>
+          <div class="field"><label>Calories</label><input type="number" id="acCals" class="w100" placeholder="0"></div>
+          <div class="field"><label>&nbsp;</label><button class="ghost" id="acAdd">Add custom</button></div>
+        </div>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:10px">1 standard drink ≈ a 330ml beer (5%), a 150ml glass of wine, or a 40ml shot. Calories auto-add to that day's nutrition total. No targets here — just honest awareness, and less is always better.</p>
+    </div>
+    <div class="split">
+      <div class="panel"><h3>Standard drinks per week</h3><div class="chartbox"><canvas id="chartDrinks"></canvas></div></div>
+      <div class="panel"><h3>This week by type</h3><div class="chartbox"><canvas id="chartDrinkType"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <h2>Drink log</h2>
+      <div id="drinkTable"></div>
     </div>
   </section>
 
@@ -276,8 +327,8 @@ const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 
 let db=load();
 function load(){
-  try{const d=JSON.parse(localStorage.getItem(KEY));if(d){d.workouts=d.workouts||[];d.foods=d.foods||[];d.body=d.body||[];d.goals=d.goals||{};d.recipes=d.recipes||[];return d;}}catch(e){}
-  return {workouts:[],foods:[],body:[],goals:{},recipes:[]};
+  try{const d=JSON.parse(localStorage.getItem(KEY));if(d){d.workouts=d.workouts||[];d.foods=d.foods||[];d.body=d.body||[];d.goals=d.goals||{};d.recipes=d.recipes||[];d.routines=d.routines||[];d.drinks=d.drinks||[];return d;}}catch(e){}
+  return {workouts:[],foods:[],body:[],goals:{},recipes:[],routines:[],drinks:[]};
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(db));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -293,18 +344,146 @@ $("tabs").addEventListener("click",e=>{
 });
 
 // ---- Init date inputs ----
-["wDate","nDate","bDate","nViewDate"].forEach(id=>$(id).value=todayISO());
+["wDate","nDate","bDate","nViewDate","aDate"].forEach(id=>$(id).value=todayISO());
 
-// ---- Workouts ----
-$("addWorkout").onclick=()=>{
+// ---- Exercise database (type + primary muscle) ----
+const EXERCISE_DB=[
+{n:"Bench Press",type:"Strength",muscle:"Chest"},
+{n:"Incline Bench Press",type:"Strength",muscle:"Chest"},
+{n:"Dumbbell Bench Press",type:"Strength",muscle:"Chest"},
+{n:"Dumbbell Fly",type:"Strength",muscle:"Chest"},
+{n:"Cable Crossover",type:"Strength",muscle:"Chest"},
+{n:"Push-up",type:"Bodyweight",muscle:"Chest"},
+{n:"Chest Dip",type:"Bodyweight",muscle:"Chest"},
+{n:"Deadlift",type:"Strength",muscle:"Back"},
+{n:"Barbell Row",type:"Strength",muscle:"Back"},
+{n:"Pull-up",type:"Bodyweight",muscle:"Back"},
+{n:"Chin-up",type:"Bodyweight",muscle:"Back"},
+{n:"Lat Pulldown",type:"Strength",muscle:"Back"},
+{n:"Seated Cable Row",type:"Strength",muscle:"Back"},
+{n:"Dumbbell Row",type:"Strength",muscle:"Back"},
+{n:"T-Bar Row",type:"Strength",muscle:"Back"},
+{n:"Face Pull",type:"Strength",muscle:"Back"},
+{n:"Squat",type:"Strength",muscle:"Legs"},
+{n:"Front Squat",type:"Strength",muscle:"Legs"},
+{n:"Leg Press",type:"Strength",muscle:"Legs"},
+{n:"Romanian Deadlift",type:"Strength",muscle:"Legs"},
+{n:"Lunge",type:"Strength",muscle:"Legs"},
+{n:"Leg Extension",type:"Strength",muscle:"Legs"},
+{n:"Leg Curl",type:"Strength",muscle:"Legs"},
+{n:"Calf Raise",type:"Strength",muscle:"Legs"},
+{n:"Bulgarian Split Squat",type:"Strength",muscle:"Legs"},
+{n:"Hip Thrust",type:"Strength",muscle:"Legs"},
+{n:"Overhead Press",type:"Strength",muscle:"Shoulders"},
+{n:"Dumbbell Shoulder Press",type:"Strength",muscle:"Shoulders"},
+{n:"Lateral Raise",type:"Strength",muscle:"Shoulders"},
+{n:"Front Raise",type:"Strength",muscle:"Shoulders"},
+{n:"Rear Delt Fly",type:"Strength",muscle:"Shoulders"},
+{n:"Arnold Press",type:"Strength",muscle:"Shoulders"},
+{n:"Shrug",type:"Strength",muscle:"Shoulders"},
+{n:"Barbell Curl",type:"Strength",muscle:"Arms"},
+{n:"Dumbbell Curl",type:"Strength",muscle:"Arms"},
+{n:"Hammer Curl",type:"Strength",muscle:"Arms"},
+{n:"Preacher Curl",type:"Strength",muscle:"Arms"},
+{n:"Cable Curl",type:"Strength",muscle:"Arms"},
+{n:"Tricep Pushdown",type:"Strength",muscle:"Arms"},
+{n:"Overhead Tricep Extension",type:"Strength",muscle:"Arms"},
+{n:"Skullcrusher",type:"Strength",muscle:"Arms"},
+{n:"Close-grip Bench Press",type:"Strength",muscle:"Arms"},
+{n:"Tricep Dip",type:"Bodyweight",muscle:"Arms"},
+{n:"Plank",type:"Bodyweight",muscle:"Core"},
+{n:"Crunch",type:"Bodyweight",muscle:"Core"},
+{n:"Hanging Leg Raise",type:"Bodyweight",muscle:"Core"},
+{n:"Russian Twist",type:"Bodyweight",muscle:"Core"},
+{n:"Cable Crunch",type:"Strength",muscle:"Core"},
+{n:"Ab Wheel Rollout",type:"Bodyweight",muscle:"Core"},
+{n:"Running",type:"Cardio",muscle:"Cardio"},
+{n:"Treadmill",type:"Cardio",muscle:"Cardio"},
+{n:"Cycling",type:"Cardio",muscle:"Cardio"},
+{n:"Rowing Machine",type:"Cardio",muscle:"Cardio"},
+{n:"Elliptical",type:"Cardio",muscle:"Cardio"},
+{n:"Stair Climber",type:"Cardio",muscle:"Cardio"},
+{n:"Jump Rope",type:"Cardio",muscle:"Cardio"},
+{n:"Swimming",type:"Cardio",muscle:"Cardio"},
+{n:"Walking",type:"Cardio",muscle:"Cardio"},
+{n:"Clean and Jerk",type:"Strength",muscle:"Full body"},
+{n:"Power Clean",type:"Strength",muscle:"Full body"},
+{n:"Snatch",type:"Strength",muscle:"Full body"},
+{n:"Kettlebell Swing",type:"Strength",muscle:"Full body"},
+{n:"Burpee",type:"Bodyweight",muscle:"Full body"},
+{n:"Thruster",type:"Strength",muscle:"Full body"}
+];
+function getExercise(name){if(!name)return null;const k=name.trim().toLowerCase();return EXERCISE_DB.find(x=>x.n.toLowerCase()===k)||null;}
+function refreshExerciseList(){
+  const past=db.workouts.map(w=>w.exercise);
+  const names=[...new Set([...EXERCISE_DB.map(x=>x.n),...past])].sort();
+  $("exList").innerHTML=names.map(n=>{const e=getExercise(n);return `<option value="${esc(n)}">${e?e.muscle+" · "+e.type:"Logged before"}</option>`;}).join("");
+}
+function lastSet(ex){const k=ex.trim().toLowerCase();return [...db.workouts].filter(w=>w.exercise.toLowerCase()===k).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id))[0]||null;}
+function bestE1RM(ex){const k=ex.trim().toLowerCase();let m=0;db.workouts.filter(w=>w.exercise.toLowerCase()===k&&w.weight&&w.reps).forEach(w=>{m=Math.max(m,w.weight*(1+w.reps/30));});return m;}
+
+// ---- Workout session builder ----
+let curSets=[];
+$("wExercise").oninput=()=>{
+  const val=$("wExercise").value.trim();
+  const e=getExercise(val);
+  if(e)$("wType").value=e.type;
+  const last=lastSet(val);
+  if(last){$("wWeight").value=last.weight||"";$("wReps").value=last.reps||"";$("wSets").value=last.sets||1;}
+  let hint=e?`${e.muscle} · ${e.type}`:"";
+  if(last){hint+=(hint?"  ·  ":"")+`Last: ${last.weight?fmt(last.weight)+"kg × ":""}${last.reps||0}${last.sets>1?" × "+last.sets:""} on ${last.date}`;
+    const pb=bestE1RM(val);if(pb)hint+=`  ·  best est. 1RM ${fmt(Math.round(pb))}kg`;}
+  $("wHint").textContent=hint;
+};
+$("wAddSet").onclick=()=>{
   const ex=$("wExercise").value.trim();
   if(!ex){toast("Enter an exercise");return;}
-  db.workouts.push({id:uid(),date:$("wDate").value,exercise:ex,type:$("wType").value,
-    weight:num($("wWeight").value),reps:num($("wReps").value),
-    sets:num($("wSets").value)||1,rpe:num($("wRpe").value)});
-  save();$("wExercise").value="";$("wWeight").value="";$("wReps").value="";$("wRpe").value="";
-  toast("Set logged");renderAll();
+  curSets.push({exercise:ex,type:$("wType").value,weight:num($("wWeight").value),reps:num($("wReps").value),sets:num($("wSets").value)||1,rpe:num($("wRpe").value)});
+  $("wRpe").value="";renderWorkoutBuilder();
 };
+function workoutVol(){return curSets.reduce((s,x)=>s+x.weight*x.reps*x.sets,0);}
+function renderWorkoutBuilder(){
+  const box=$("wBuilder");
+  if(!curSets.length){box.innerHTML='<div class="empty">No sets added yet. Pick an exercise, adjust the numbers, tap "Add set". Add as many as you like, then Save workout.</div>';return;}
+  let h='<table><thead><tr><th>Exercise</th><th>Type</th><th class="num">Weight</th><th class="num">Reps</th><th class="num">Sets</th><th class="num">Volume</th><th class="num">RPE</th><th></th></tr></thead><tbody>';
+  curSets.forEach((x,idx)=>{const vol=x.weight*x.reps*x.sets;
+    h+=`<tr><td>${esc(x.exercise)}</td><td><span class="chip">${x.type}</span></td>
+      <td class="num">${x.weight?fmt(x.weight):"—"}</td><td class="num">${x.reps||"—"}</td><td class="num">${x.sets}</td>
+      <td class="num">${vol?fmt(vol):"—"}</td><td class="num">${x.rpe||"—"}</td>
+      <td class="num"><button class="danger sm" onclick="rmSet(${idx})">✕</button></td></tr>`;});
+  h+=`</tbody><tfoot><tr style="font-weight:700"><td>Total volume</td><td></td><td></td><td></td><td></td><td class="num">${fmt(Math.round(workoutVol()))}</td><td></td><td></td></tr></tfoot></table>`;
+  box.innerHTML=h;
+}
+window.rmSet=idx=>{curSets.splice(idx,1);renderWorkoutBuilder();};
+$("wClear").onclick=()=>{curSets=[];renderWorkoutBuilder();};
+$("wSave").onclick=()=>{
+  if(!curSets.length){toast("Add sets first");return;}
+  const d=$("wDate").value;
+  curSets.forEach(x=>db.workouts.push({id:uid(),date:d,exercise:x.exercise,type:x.type,weight:x.weight,reps:x.reps,sets:x.sets,rpe:x.rpe}));
+  save();curSets=[];$("wExercise").value="";$("wHint").textContent="";
+  toast("Workout saved");renderAll();
+};
+$("wSaveRoutine").onclick=()=>{
+  if(!curSets.length){toast("Add sets first");return;}
+  const name=prompt("Name this routine (e.g. Push Day):");
+  if(!name)return;
+  db.routines.push({id:uid(),name:name,items:curSets.map(x=>({exercise:x.exercise,type:x.type,weight:x.weight,reps:x.reps,sets:x.sets}))});
+  save();refreshRoutines();toast("Routine saved — load it anytime");
+};
+$("wRoutine").onchange=e=>{const r=db.routines.find(x=>x.id===e.target.value);if(r){curSets=r.items.map(x=>({...x,rpe:0}));renderWorkoutBuilder();}e.target.value="";};
+function refreshRoutines(){
+  $("wRoutine").innerHTML='<option value="">— none —</option>'+db.routines.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join("");
+  const box=$("routineList");
+  if(!db.routines.length){box.innerHTML='<div class="empty">No saved routines yet. Build a workout and tap "Save as routine" to reuse it (e.g. Push Day, Leg Day).</div>';return;}
+  let h='<table><thead><tr><th>Routine</th><th>Exercises</th><th class="num">Sets</th><th></th></tr></thead><tbody>';
+  db.routines.forEach(r=>{const uniq=[...new Set(r.items.map(i=>i.exercise))];
+    h+=`<tr><td>${esc(r.name)}</td><td class="catchip">${uniq.slice(0,4).map(esc).join(", ")}${uniq.length>4?" +"+(uniq.length-4):""}</td>
+      <td class="num">${r.items.length}</td>
+      <td class="num"><button class="ghost sm" onclick="useRoutine('${r.id}')">Use</button>
+        <button class="danger sm" onclick="delItem('routines','${r.id}')">✕</button></td></tr>`;});
+  h+="</tbody></table>";box.innerHTML=h;
+}
+window.useRoutine=id=>{const r=db.routines.find(x=>x.id===id);if(!r)return;curSets=r.items.map(x=>({...x,rpe:0}));renderWorkoutBuilder();window.scrollTo({top:0,behavior:"smooth"});toast("Loaded into builder");};
 $("wSearch").oninput=renderWorkoutTable;
 
 function renderWorkoutTable(){
@@ -490,4 +669,385 @@ $("cAdd").onclick=()=>{
 $("clearBuilder").onclick=()=>{curItems=[];$("nMenu").value="";renderBuilder();};
 $("logMeal").onclick=()=>{
   if(!curItems.length){toast("Add ingredients first");return;}
-  const t=
+  const t=builderTotals();
+  const menu=$("nMenu").value.trim()||(curItems.length===1?curItems[0].name:curItems[0].name+" +"+(curItems.length-1));
+  db.foods.push({id:uid(),date:$("nDate").value,meal:$("nMeal").value,food:menu,
+    cals:r1(t.kcal),prot:r1(t.p),carb:r1(t.c),fat:r1(t.f),items:curItems.map(i=>({...i}))});
+  save();$("nViewDate").value=$("nDate").value;curItems=[];$("nMenu").value="";
+  toast("Meal logged");renderAll();
+};
+$("saveRecipe").onclick=()=>{
+  if(!curItems.length){toast("Add ingredients first");return;}
+  const name=$("nMenu").value.trim()||prompt("Name this recipe:");
+  if(!name)return;
+  db.recipes.push({id:uid(),name:name,items:curItems.map(i=>({...i}))});
+  save();refreshRecipes();toast("Recipe saved — reuse it anytime");
+};
+$("nRecipe").onchange=e=>{
+  const r=db.recipes.find(x=>x.id===e.target.value);
+  if(r){curItems=r.items.map(i=>({...i}));if(!$("nMenu").value)$("nMenu").value=r.name;renderBuilder();}
+  e.target.value="";
+};
+function refreshRecipes(){
+  $("nRecipe").innerHTML='<option value="">— none —</option>'+db.recipes.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join("");
+  const box=$("recipeList");
+  if(!db.recipes.length){box.innerHTML='<div class="empty">No saved recipes yet. Build a meal and tap "Save as recipe" to reuse it in one tap.</div>';return;}
+  let h='<table><thead><tr><th>Recipe</th><th class="num">Cals</th><th class="num">P</th><th class="num">C</th><th class="num">F</th><th>Items</th><th></th></tr></thead><tbody>';
+  db.recipes.forEach(r=>{
+    const t=r.items.reduce((s,i)=>({k:s.k+i.kcal,p:s.p+i.p,c:s.c+i.c,f:s.f+i.f}),{k:0,p:0,c:0,f:0});
+    h+=`<tr><td>${esc(r.name)}</td><td class="num">${fmt(t.k)}</td><td class="num">${fmt(t.p)}</td>
+      <td class="num">${fmt(t.c)}</td><td class="num">${fmt(t.f)}</td><td class="catchip">${r.items.length} item(s)</td>
+      <td class="num"><button class="ghost sm" onclick="useRecipe('${r.id}')">Use</button>
+        <button class="danger sm" onclick="delItem('recipes','${r.id}')">✕</button></td></tr>`;
+  });
+  h+="</tbody></table>";box.innerHTML=h;
+}
+window.useRecipe=id=>{
+  const r=db.recipes.find(x=>x.id===id);if(!r)return;
+  curItems=r.items.map(i=>({...i}));if(!$("nMenu").value)$("nMenu").value=r.name;
+  renderBuilder();window.scrollTo({top:0,behavior:"smooth"});toast("Loaded into builder");
+};
+$("nViewDate").onchange=renderNutrition;
+
+function renderNutrition(){
+  const d=$("nViewDate").value;
+  const rows=db.foods.filter(r=>r.date===d).sort((a,b)=>a.id.localeCompare(b.id));
+  const drinks=db.drinks.filter(r=>r.date===d).sort((a,b)=>a.id.localeCompare(b.id));
+  const tot=rows.reduce((s,r)=>({cals:s.cals+r.cals,prot:s.prot+r.prot,carb:s.carb+r.carb,fat:s.fat+r.fat}),{cals:0,prot:0,carb:0,fat:0});
+  tot.cals+=drinks.reduce((s,x)=>s+x.cals,0);
+  const g=db.goals;
+  const cell=(lbl,val,goal,unit)=>{
+    let sub="";
+    if(goal){const pct=Math.min(100,Math.round(val/goal*100));
+      sub=`<div class="sub muted">${fmt(val)} / ${goal} ${unit}</div><div class="bar"><span style="width:${pct}%"></span></div>`;}
+    else sub=`<div class="sub muted">${unit}</div>`;
+    return `<div class="card stat"><div class="num">${fmt(val)}</div><div class="lbl">${lbl}</div>${sub}</div>`;
+  };
+  $("dayTotals").innerHTML=
+    cell("Calories",tot.cals,g.cals,"kcal")+cell("Protein",tot.prot,g.prot,"g")+
+    cell("Carbs",tot.carb,g.carb,"g")+cell("Fat",tot.fat,g.fat,"g");
+  if(!rows.length&&!drinks.length){$("foodTable").innerHTML='<div class="empty">Nothing logged for this day.</div>';return;}
+  let h='<table><thead><tr><th>Meal</th><th>Food</th><th class="num">Cals</th><th class="num">P</th><th class="num">C</th><th class="num">F</th><th></th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    h+=`<tr><td><span class="chip">${r.meal}</span></td><td>${esc(r.food)}</td>
+      <td class="num">${r.cals||"—"}</td><td class="num">${r.prot||"—"}</td>
+      <td class="num">${r.carb||"—"}</td><td class="num">${r.fat||"—"}</td>
+      <td class="num"><button class="danger sm" onclick="delItem('foods','${r.id}')">✕</button></td></tr>`;
+  });
+  drinks.forEach(r=>{
+    h+=`<tr><td><span class="chip">🍺 Drink</span></td><td>${esc(r.drink)}${r.qty>1?" ×"+r.qty:""}</td>
+      <td class="num">${r.cals||"—"}</td><td class="num">—</td>
+      <td class="num">—</td><td class="num">—</td>
+      <td class="num"><button class="danger sm" onclick="delItem('drinks','${r.id}')">✕</button></td></tr>`;
+  });
+  h+='</tbody></table>';
+  $("foodTable").innerHTML=h;
+}
+
+// ---- Alcohol ----
+const DRINK_DB=[
+{n:"Beer, regular (330ml 5%)",cat:"Beer",std:1.0,kcal:140},
+{n:"Beer, light (330ml 4%)",cat:"Beer",std:0.8,kcal:100},
+{n:"Beer, strong / IPA (330ml 7%)",cat:"Beer",std:1.4,kcal:200},
+{n:"Beer, large bottle (630ml 5%)",cat:"Beer",std:2.0,kcal:270},
+{n:"Red wine (150ml 13%)",cat:"Wine",std:1.3,kcal:125},
+{n:"White wine (150ml 12%)",cat:"Wine",std:1.2,kcal:120},
+{n:"Sparkling / Champagne (120ml 12%)",cat:"Wine",std:1.0,kcal:90},
+{n:"Spirit shot (40ml 40%)",cat:"Spirits",std:1.0,kcal:95},
+{n:"Whiskey neat (44ml 40%)",cat:"Spirits",std:1.1,kcal:105},
+{n:"Vodka soda",cat:"Spirits",std:1.0,kcal:95},
+{n:"Gin & tonic",cat:"Cocktail",std:1.0,kcal:175},
+{n:"Whiskey & cola",cat:"Cocktail",std:1.0,kcal:180},
+{n:"Margarita",cat:"Cocktail",std:1.5,kcal:250},
+{n:"Mojito",cat:"Cocktail",std:1.2,kcal:220},
+{n:"Piña colada",cat:"Cocktail",std:1.5,kcal:300},
+{n:"Hard seltzer (330ml 5%)",cat:"Other",std:1.0,kcal:100},
+{n:"Cider (330ml 5%)",cat:"Other",std:1.0,kcal:150},
+{n:"Sake (180ml 15%)",cat:"Other",std:1.5,kcal:135},
+{n:"Soju (glass 50ml 17%)",cat:"Other",std:0.6,kcal:65},
+{n:"Soju (bottle 360ml 17%)",cat:"Other",std:4.0,kcal:430}
+];
+function getDrink(name){if(!name)return null;const k=name.trim().toLowerCase();return DRINK_DB.find(x=>x.n.toLowerCase()===k)||null;}
+function refreshDrinkList(){$("drinkList").innerHTML=DRINK_DB.map(x=>`<option value="${esc(x.n)}">${x.cat} · ${x.std} std · ${x.kcal} kcal</option>`).join("");}
+function dayDrinkCals(d){return db.drinks.filter(x=>x.date===d).reduce((s,x)=>s+x.cals,0);}
+
+$("aDrink").oninput=()=>{
+  const dr=getDrink($("aDrink").value);
+  $("aHint").textContent=dr?`${dr.std} standard drink${dr.std===1?"":"s"} · ${dr.kcal} kcal each`:"";
+};
+$("aAdd").onclick=()=>{
+  const dr=getDrink($("aDrink").value);
+  if(!dr){toast("Pick a drink, or use custom");return;}
+  const q=Math.max(1,num($("aQty").value)||1);
+  db.drinks.push({id:uid(),date:$("aDate").value,drink:dr.n,qty:q,std:r1(dr.std*q),cals:Math.round(dr.kcal*q)});
+  save();$("aDrink").value="";$("aQty").value="1";$("aHint").textContent="";
+  toast("Drink logged");renderAll();
+};
+$("aCustomToggle").onclick=()=>{const b=$("aCustomBox");b.style.display=b.style.display==="none"?"block":"none";};
+$("acAdd").onclick=()=>{
+  const n=$("acName").value.trim();
+  if(!n){toast("Name the drink");return;}
+  db.drinks.push({id:uid(),date:$("aDate").value,drink:n,qty:1,std:num($("acStd").value),cals:Math.round(num($("acCals").value))});
+  save();["acName","acStd","acCals"].forEach(id=>$(id).value="");
+  toast("Drink logged");renderAll();
+};
+function renderAlcohol(){
+  const card=(n,l,s)=>`<div class="card stat"><div class="num">${n}</div><div class="lbl">${l}</div><div class="sub muted">${s}</div></div>`;
+  const wkNow=weekKey(todayISO());
+  const wk=db.drinks.filter(x=>weekKey(x.date)===wkNow);
+  const stdWeek=wk.reduce((s,x)=>s+x.std,0), calWeek=wk.reduce((s,x)=>s+x.cals,0);
+  let afDays=0;for(let i=0;i<7;i++){if(!db.drinks.some(x=>x.date===daysBack(i)))afDays++;}
+  let streak=0;for(let i=0;i<400;i++){if(db.drinks.some(x=>x.date===daysBack(i)))break;streak++;}
+  $("alcStats").innerHTML=
+    card(fmt(r1(stdWeek)),"Std drinks this week","≈ alcohol units")+
+    card(fmt(Math.round(calWeek)),"Calories this week","from alcohol")+
+    card(afDays,"Alcohol-free days","in the last 7 days")+
+    card(streak,"Current dry streak","day(s) since last drink");
+  // table
+  const rows=[...db.drinks].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  if(!rows.length){$("drinkTable").innerHTML='<div class="empty">No drinks logged yet. Log one above — no judgment, just data.</div>';}
+  else{
+    let h='<table><thead><tr><th>Date</th><th>Drink</th><th class="num">Qty</th><th class="num">Std</th><th class="num">Cals</th><th></th></tr></thead><tbody>';
+    rows.slice(0,300).forEach(r=>{h+=`<tr><td>${r.date}</td><td>${esc(r.drink)}</td><td class="num">${r.qty}</td>
+      <td class="num">${fmt(r.std)}</td><td class="num">${r.cals}</td>
+      <td class="num"><button class="danger sm" onclick="delItem('drinks','${r.id}')">✕</button></td></tr>`;});
+    h+='</tbody></table>';$("drinkTable").innerHTML=h;
+  }
+  // weekly trend
+  const map={};db.drinks.forEach(x=>{const k=weekKey(x.date);map[k]=(map[k]||0)+x.std;});
+  const wks=Object.keys(map).sort().slice(-10);
+  mkChart("chartDrinks",{type:"bar",data:{labels:wks,datasets:[{label:"Std drinks",data:wks.map(k=>r1(map[k])),backgroundColor:"#a855f7"}]},
+    options:baseOpts({plugins:{legend:{display:false}}})});
+  // this week by category
+  const catMap={};wk.forEach(x=>{const dr=getDrink(x.drink);const c=dr?dr.cat:"Other";catMap[c]=(catMap[c]||0)+x.std;});
+  const cats=Object.keys(catMap);
+  mkChart("chartDrinkType",{type:"doughnut",
+    data:{labels:cats.length?cats:["No drinks this week"],datasets:[{data:cats.length?cats.map(c=>r1(catMap[c])):[1],
+      backgroundColor:["#a855f7","#4f8cff","#22c55e","#f59e0b","#ef4444"],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:tickColor}}}}});
+}
+
+// ---- Body ----
+$("addBody").onclick=()=>{
+  const w=num($("bWeight").value);
+  if(!w&&!$("bFat").value&&!$("bWaist").value){toast("Enter at least one metric");return;}
+  db.body.push({id:uid(),date:$("bDate").value,weight:w,fat:num($("bFat").value),
+    waist:num($("bWaist").value),note:$("bNote").value.trim()});
+  save();["bWeight","bFat","bWaist","bNote"].forEach(id=>$(id).value="");
+  toast("Logged");renderAll();
+};
+function renderBodyTable(){
+  const rows=[...db.body].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  if(!rows.length){$("bodyTable").innerHTML='<div class="empty">No body metrics yet.</div>';return;}
+  let h='<table><thead><tr><th>Date</th><th class="num">Weight</th><th class="num">Body fat</th><th class="num">Waist</th><th>Note</th><th></th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    h+=`<tr><td>${r.date}</td><td class="num">${r.weight?fmt(r.weight)+" kg":"—"}</td>
+      <td class="num">${r.fat?fmt(r.fat)+"%":"—"}</td><td class="num">${r.waist?fmt(r.waist)+" cm":"—"}</td>
+      <td>${esc(r.note||"")}</td>
+      <td class="num"><button class="danger sm" onclick="delItem('body','${r.id}')">✕</button></td></tr>`;
+  });
+  h+='</tbody></table>';
+  $("bodyTable").innerHTML=h;
+}
+
+// ---- Delete ----
+window.delItem=(coll,id)=>{db[coll]=db[coll].filter(r=>r.id!==id);save();renderAll();};
+
+// ---- Goals ----
+function loadGoals(){const g=db.goals||{};
+  $("gCals").value=g.cals||"";$("gProt").value=g.prot||"";$("gCarb").value=g.carb||"";
+  $("gFat").value=g.fat||"";$("gWeight").value=g.weight||"";$("gWorkouts").value=g.workouts||"";}
+$("saveGoals").onclick=()=>{
+  db.goals={cals:num($("gCals").value),prot:num($("gProt").value),carb:num($("gCarb").value),
+    fat:num($("gFat").value),weight:num($("gWeight").value),workouts:num($("gWorkouts").value)};
+  save();toast("Goals saved");renderAll();
+};
+
+// ---- Backup ----
+$("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="fitness-tracker-backup-"+todayISO()+".json";a.click();
+};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    db={workouts:d.workouts||[],foods:d.foods||[],body:d.body||[],goals:d.goals||{},recipes:d.recipes||[],routines:d.routines||[],drinks:d.drinks||[]};
+    save();loadGoals();renderAll();toast("Imported");}catch(err){toast("Invalid file");}};
+  r.readAsText(f);
+};
+$("wipeBtn").onclick=()=>{if(confirm("Delete ALL tracked data? This cannot be undone.")){
+  db={workouts:[],foods:[],body:[],goals:{},recipes:[],routines:[],drinks:[]};curItems=[];curSets=[];save();loadGoals();renderAll();toast("All data deleted");}};
+$("sampleBtn").onclick=()=>{if(db.workouts.length||db.foods.length||db.body.length){
+  if(!confirm("This adds sample data on top of what you have. Continue?"))return;}
+  loadSample();save();loadGoals();renderAll();toast("Sample data loaded");};
+
+// ---- Helpers ----
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function daysBack(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);}
+function weekKey(iso){const d=new Date(iso);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10);}
+
+// ---- Charts ----
+let charts={};
+function mkChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg);}
+const gridColor="#2a323c",tickColor="#93a0b0";
+const baseOpts=(extra={})=>({responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:tickColor,boxWidth:12}}},
+  scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{color:gridColor}}},...extra});
+
+function renderCharts(){
+  // Weight trend
+  const bw=[...db.body].filter(b=>b.weight).sort((a,b)=>a.date.localeCompare(b.date));
+  mkChart("chartWeight",{type:"line",
+    data:{labels:bw.map(b=>b.date),datasets:[{label:"Weight (kg)",data:bw.map(b=>b.weight),
+      borderColor:"#4f8cff",backgroundColor:"rgba(79,140,255,.15)",fill:true,tension:.3,pointRadius:3}]},
+    options:baseOpts()});
+  // Calories last 14 days
+  const days=[];for(let i=13;i>=0;i--)days.push(daysBack(i));
+  const calByDay=days.map(d=>db.foods.filter(f=>f.date===d).reduce((s,f)=>s+f.cals,0)+dayDrinkCals(d));
+  const goalCals=db.goals.cals;
+  const ds=[{label:"Calories",data:calByDay,backgroundColor:"#22c55e"}];
+  mkChart("chartCals",{type:"bar",data:{labels:days.map(d=>d.slice(5)),datasets:ds},
+    options:baseOpts({plugins:{legend:{display:false},
+      annotation:{}},})});
+  // draw goal line manually via dataset if set
+  if(goalCals){charts["chartCals"].data.datasets.push({type:"line",label:"Goal",
+    data:days.map(()=>goalCals),borderColor:"#f59e0b",borderDash:[5,5],pointRadius:0});
+    charts["chartCals"].options.plugins.legend.display=true;charts["chartCals"].update();}
+  // Volume per week
+  const volMap={};db.workouts.forEach(w=>{const k=weekKey(w.date);volMap[k]=(volMap[k]||0)+w.weight*w.reps*w.sets;});
+  const wk=Object.keys(volMap).sort().slice(-10);
+  mkChart("chartVolume",{type:"bar",data:{labels:wk,datasets:[{label:"Volume (kg)",
+    data:wk.map(k=>Math.round(volMap[k])),backgroundColor:"#4f8cff"}]},
+    options:baseOpts({plugins:{legend:{display:false}}})});
+  // Macros today
+  const d=todayISO();const tf=db.foods.filter(f=>f.date===d);
+  const p=tf.reduce((s,f)=>s+f.prot,0),c=tf.reduce((s,f)=>s+f.carb,0),ft=tf.reduce((s,f)=>s+f.fat,0);
+  mkChart("chartMacros",{type:"doughnut",
+    data:{labels:["Protein "+fmt(p)+"g","Carbs "+fmt(c)+"g","Fat "+fmt(ft)+"g"],
+      datasets:[{data:[p,c,ft],backgroundColor:["#4f8cff","#22c55e","#f59e0b"],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:tickColor}}}}});
+  renderStrength();
+}
+function renderStrength(){
+  const sel=$("progExercise");
+  const exs=[...new Set(db.workouts.filter(w=>w.type!=="Cardio").map(w=>w.exercise))].sort();
+  const cur=sel.value;
+  sel.innerHTML=exs.length?exs.map(e=>`<option>${esc(e)}</option>`).join(""):'<option>—</option>';
+  if(exs.includes(cur))sel.value=cur;
+  const ex=sel.value;
+  // best est 1RM per day: weight*(1+reps/30) Epley
+  const byDay={};
+  db.workouts.filter(w=>w.exercise===ex&&w.weight&&w.reps).forEach(w=>{
+    const e1=w.weight*(1+w.reps/30);byDay[w.date]=Math.max(byDay[w.date]||0,e1);});
+  const dates=Object.keys(byDay).sort();
+  mkChart("chartStrength",{type:"line",
+    data:{labels:dates,datasets:[{label:ex+" — est. 1RM (kg)",data:dates.map(d=>Math.round(byDay[d])),
+      borderColor:"#22c55e",backgroundColor:"rgba(34,197,94,.15)",fill:true,tension:.3,pointRadius:3}]},
+    options:baseOpts()});
+}
+$("progExercise").onchange=renderStrength;
+
+// ---- Stat cards ----
+function renderStats(){
+  const g=db.goals;
+  const bw=[...db.body].filter(b=>b.weight).sort((a,b)=>a.date.localeCompare(b.date));
+  const latest=bw[bw.length-1], first=bw[0];
+  let weightCard;
+  if(latest){
+    let delta="";
+    if(first&&first!==latest){const dv=latest.weight-first.weight;
+      const cls=dv<0?"down":dv>0?"up":"flat";
+      delta=`<div class="sub ${cls}">${dv>0?"+":""}${fmt(dv)} kg since start</div>`;}
+    if(g.weight){const to=latest.weight-g.weight;
+      delta+=`<div class="sub muted">${fmt(Math.abs(to))} kg ${to>0?"to lose":to<0?"to gain":""} to goal</div>`;}
+    weightCard=`<div class="card stat"><div class="num">${fmt(latest.weight)} kg</div><div class="lbl">Current weight</div>${delta}</div>`;
+  }else weightCard=`<div class="card stat"><div class="num">—</div><div class="lbl">Current weight</div><div class="sub muted">Log in Body tab</div></div>`;
+
+  const dToday=todayISO();
+  const calToday=db.foods.filter(f=>f.date===dToday).reduce((s,f)=>s+f.cals,0)+dayDrinkCals(dToday);
+  let calSub=g.cals?`<div class="sub muted">Goal ${g.cals} kcal</div><div class="bar"><span style="width:${Math.min(100,Math.round(calToday/g.cals*100))}%"></span></div>`:`<div class="sub muted">Set a goal in Goals tab</div>`;
+  const calCard=`<div class="card stat"><div class="num">${fmt(calToday)}</div><div class="lbl">Calories today</div>${calSub}</div>`;
+
+  // workouts this week
+  const wkNow=weekKey(dToday);
+  const wDays=new Set(db.workouts.filter(w=>weekKey(w.date)===wkNow).map(w=>w.date));
+  let wSub=g.workouts?`<div class="sub muted">Goal ${g.workouts}/week</div><div class="bar"><span style="width:${Math.min(100,Math.round(wDays.size/g.workouts*100))}%"></span></div>`:`<div class="sub muted">days trained this week</div>`;
+  const wCard=`<div class="card stat"><div class="num">${wDays.size}</div><div class="lbl">Workouts this week</div>${wSub}</div>`;
+
+  // total volume this week
+  const volWeek=db.workouts.filter(w=>weekKey(w.date)===wkNow).reduce((s,w)=>s+w.weight*w.reps*w.sets,0);
+  const volCard=`<div class="card stat"><div class="num">${fmt(Math.round(volWeek))}</div><div class="lbl">Volume this week (kg)</div><div class="sub muted">weight × reps × sets</div></div>`;
+
+  // protein today
+  const protToday=db.foods.filter(f=>f.date===dToday).reduce((s,f)=>s+f.prot,0);
+  let pSub=g.prot?`<div class="sub muted">Goal ${g.prot} g</div><div class="bar"><span style="width:${Math.min(100,Math.round(protToday/g.prot*100))}%"></span></div>`:`<div class="sub muted">grams today</div>`;
+  const pCard=`<div class="card stat"><div class="num">${fmt(protToday)} g</div><div class="lbl">Protein today</div>${pSub}</div>`;
+
+  $("statCards").innerHTML=weightCard+calCard+pCard+wCard+volCard;
+}
+
+// ---- Sample data ----
+function loadSample(){
+  const P=(d,ex,t,w,reps,sets,rpe)=>db.workouts.push({id:uid(),date:d,exercise:ex,type:t,weight:w,reps:reps,sets:sets,rpe:rpe});
+  const F=(d,m,f,c,p,cb,ft)=>db.foods.push({id:uid(),date:d,meal:m,food:f,cals:c,prot:p,carb:cb,fat:ft});
+  const B=(d,w,fat,waist)=>db.body.push({id:uid(),date:d,weight:w,fat:fat,waist:waist,note:""});
+  const day=n=>daysBack(n);
+  // 5 weeks bodyweight (cutting)
+  B(day(35),82.0,22,88); B(day(28),81.2,21.5,87); B(day(21),80.5,21,86.5);
+  B(day(14),79.9,20.6,86); B(day(7),79.3,20.2,85.5); B(day(1),78.8,19.9,85);
+  // strength progression
+  [35,28,21,14,7,1].forEach((n,i)=>{
+    P(day(n),"Bench Press","Strength",60+i*2.5,5,3,8);
+    P(day(n),"Squat","Strength",80+i*5,5,3,8);
+    P(day(n),"Deadlift","Strength",100+i*5,5,1,8.5);
+    P(day(n),"Pull-up","Bodyweight",0,8+i,3,8);
+  });
+  // recent nutrition
+  [0,1,2,3,4].forEach(n=>{
+    const d=day(n);
+    F(d,"Breakfast","Oats + whey + banana",480,35,60,10);
+    F(d,"Lunch","Chicken breast + rice + veg",620,55,65,12);
+    F(d,"Dinner","Salmon + potato + salad",640,45,50,25);
+    F(d,"Snack","Greek yogurt + berries",220,20,18,4);
+  });
+  db.recipes.push({id:uid(),name:"Chicken & rice bowl",items:[
+    {name:"Chicken breast, cooked",grams:150,kcal:247.5,p:46.5,c:0,f:5.4},
+    {name:"Jasmine rice, cooked",grams:200,kcal:260,p:5.4,c:56,f:0.6},
+    {name:"Mixed vegetables",grams:100,kcal:65,p:2.6,c:13,f:0.4}]});
+  db.recipes.push({id:uid(),name:"Oats + whey breakfast",items:[
+    {name:"Oats, dry",grams:60,kcal:233.4,p:10.2,c:39.6,f:4.2},
+    {name:"Whey protein powder",grams:30,kcal:120,p:24,c:2.4,f:1.8},
+    {name:"Banana",grams:120,kcal:106.8,p:1.3,c:27.6,f:0.4}]});
+  db.routines.push({id:uid(),name:"Push Day",items:[
+    {exercise:"Bench Press",type:"Strength",weight:70,reps:5,sets:3},
+    {exercise:"Overhead Press",type:"Strength",weight:40,reps:8,sets:3},
+    {exercise:"Incline Bench Press",type:"Strength",weight:50,reps:8,sets:3},
+    {exercise:"Lateral Raise",type:"Strength",weight:10,reps:12,sets:3},
+    {exercise:"Tricep Pushdown",type:"Strength",weight:25,reps:12,sets:3}]});
+  db.routines.push({id:uid(),name:"Pull Day",items:[
+    {exercise:"Deadlift",type:"Strength",weight:120,reps:5,sets:1},
+    {exercise:"Pull-up",type:"Bodyweight",weight:0,reps:8,sets:3},
+    {exercise:"Barbell Row",type:"Strength",weight:60,reps:8,sets:3},
+    {exercise:"Barbell Curl",type:"Strength",weight:30,reps:10,sets:3}]});
+  const D=(dd,name,q,std,cals)=>db.drinks.push({id:uid(),date:dd,drink:name,qty:q,std:std,cals:cals});
+  D(day(2),"Beer, regular (330ml 5%)",2,2.0,280);
+  D(day(6),"Red wine (150ml 13%)",2,2.6,250);
+  D(day(9),"Whiskey neat (44ml 40%)",3,3.3,315);
+  D(day(13),"Beer, regular (330ml 5%)",3,3.0,420);
+  D(day(20),"Margarita",2,3.0,500);
+  db.goals={cals:2100,prot:160,carb:210,fat:65,weight:75,workouts:4};
+}
+
+// ---- Render all ----
+function renderAll(){
+  renderStats();renderCharts();renderWorkoutTable();renderNutrition();renderBodyTable();
+  refreshExerciseList();refreshFoodList();refreshRecipes();renderBuilder();
+  refreshRoutines();renderWorkoutBuilder();refreshDrinkList();renderAlcohol();
+}
+loadGoals();renderAll();
+</script>
+</body>
+</html>
