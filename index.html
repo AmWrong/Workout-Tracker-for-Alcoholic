@@ -79,6 +79,23 @@
   hr{border:none;border-top:1px solid var(--line);margin:16px 0}
   tfoot td{border-top:2px solid var(--line);border-bottom:none}
   .catchip{font-size:11px;color:var(--muted)}
+  .pickerwrap{position:relative}
+  .picker-panel{position:absolute;top:100%;left:0;right:0;z-index:30;background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;margin-top:4px;max-height:280px;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;box-shadow:0 10px 30px rgba(0,0,0,.5);display:none}
+  .picker-panel.open{display:block}
+  .picker-row{padding:11px 12px;cursor:pointer;border-bottom:1px solid var(--line);display:flex;
+    justify-content:space-between;gap:12px;align-items:center}
+  .picker-row:last-child{border-bottom:none}
+  .picker-row:active,.picker-row:hover{background:var(--chip)}
+  .picker-row .pname{font-size:14px}
+  .picker-row .pmeta{font-size:12px;color:var(--muted);white-space:nowrap;text-align:right}
+  .picker-empty{padding:12px;color:var(--muted);font-size:13px}
+  .presetrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+  .presetrow .plabel{font-size:12px;color:var(--muted);margin-right:2px}
+  .btn-mini{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:7px 12px;
+    border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn-mini:active,.btn-mini:hover{border-color:var(--accent);color:#fff}
 </style>
 </head>
 <body>
@@ -139,8 +156,10 @@
       <h3>Add a set</h3>
       <div class="row">
         <div class="field grow"><label>Exercise</label>
-          <input list="exList" id="wExercise" placeholder="type to search 60+ exercises…" autocomplete="off">
-          <datalist id="exList"></datalist>
+          <div class="pickerwrap">
+            <input type="text" id="wExercise" placeholder="tap and type to search 60+ exercises…" autocomplete="off">
+            <div class="picker-panel" id="wExercisePanel"></div>
+          </div>
         </div>
         <div class="field"><label>Type</label>
           <select id="wType" class="w120"><option>Strength</option><option>Cardio</option><option>Bodyweight</option><option>Other</option></select>
@@ -189,12 +208,24 @@
       <h3>Add ingredient / dish</h3>
       <div class="row">
         <div class="field grow"><label>Search food</label>
-          <input type="text" id="nIng" list="foodList" placeholder="type to search 100+ foods…" autocomplete="off">
-          <datalist id="foodList"></datalist>
+          <div class="pickerwrap">
+            <input type="text" id="nIng" placeholder="tap and type to search 100+ foods…" autocomplete="off">
+            <div class="picker-panel" id="nIngPanel"></div>
+          </div>
         </div>
         <div class="field"><label>Grams</label><input type="number" id="nGrams" class="w100" placeholder="0"></div>
-        <div class="field"><label>&nbsp;</label><button class="ghost sm" id="nServing" title="fill in a typical serving size">1 serving</button></div>
         <div class="field"><label>&nbsp;</label><button id="nAddIng">Add</button></div>
+      </div>
+      <div class="presetrow">
+        <span class="plabel">Serving:</span>
+        <button type="button" class="btn-mini" onclick="servingMult(0.5)">0.5×</button>
+        <button type="button" class="btn-mini" onclick="servingMult(1)">1×</button>
+        <button type="button" class="btn-mini" onclick="servingMult(1.5)">1.5×</button>
+        <button type="button" class="btn-mini" onclick="servingMult(2)">2×</button>
+        <span class="plabel" style="margin-left:12px">Protein boost:</span>
+        <button type="button" class="btn-mini" onclick="proteinBoost(10)">+10g</button>
+        <button type="button" class="btn-mini" onclick="proteinBoost(20)">+20g</button>
+        <button type="button" class="btn-mini" onclick="proteinBoost(30)">+30g</button>
       </div>
       <div id="nIngHint" class="muted" style="font-size:12px;min-height:16px;margin-top:4px"></div>
       <div style="margin-top:4px"><a class="link" id="nCustomToggle">+ Can't find it? Add a custom food</a></div>
@@ -239,8 +270,10 @@
       <div class="row">
         <div class="field"><label>Date</label><input type="date" id="aDate"></div>
         <div class="field grow"><label>Drink</label>
-          <input type="text" id="aDrink" list="drinkList" placeholder="search beers, wine, spirits, cocktails…" autocomplete="off">
-          <datalist id="drinkList"></datalist>
+          <div class="pickerwrap">
+            <input type="text" id="aDrink" placeholder="tap and type: beer, wine, spirits, cocktails…" autocomplete="off">
+            <div class="picker-panel" id="aDrinkPanel"></div>
+          </div>
         </div>
         <div class="field"><label>Quantity</label><input type="number" id="aQty" class="w80" value="1" step="1" min="1"></div>
         <div class="field"><label>&nbsp;</label><button id="aAdd">Add</button></div>
@@ -414,17 +447,13 @@ const EXERCISE_DB=[
 {n:"Thruster",type:"Strength",muscle:"Full body"}
 ];
 function getExercise(name){if(!name)return null;const k=name.trim().toLowerCase();return EXERCISE_DB.find(x=>x.n.toLowerCase()===k)||null;}
-function refreshExerciseList(){
-  const past=db.workouts.map(w=>w.exercise);
-  const names=[...new Set([...EXERCISE_DB.map(x=>x.n),...past])].sort();
-  $("exList").innerHTML=names.map(n=>{const e=getExercise(n);return `<option value="${esc(n)}">${e?e.muscle+" · "+e.type:"Logged before"}</option>`;}).join("");
-}
+function refreshExerciseList(){/* replaced by custom picker */}
 function lastSet(ex){const k=ex.trim().toLowerCase();return [...db.workouts].filter(w=>w.exercise.toLowerCase()===k).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id))[0]||null;}
 function bestE1RM(ex){const k=ex.trim().toLowerCase();let m=0;db.workouts.filter(w=>w.exercise.toLowerCase()===k&&w.weight&&w.reps).forEach(w=>{m=Math.max(m,w.weight*(1+w.reps/30));});return m;}
 
 // ---- Workout session builder ----
 let curSets=[];
-$("wExercise").oninput=()=>{
+function applyExerciseSelection(){
   const val=$("wExercise").value.trim();
   const e=getExercise(val);
   if(e)$("wType").value=e.type;
@@ -434,7 +463,8 @@ $("wExercise").oninput=()=>{
   if(last){hint+=(hint?"  ·  ":"")+`Last: ${last.weight?fmt(last.weight)+"kg × ":""}${last.reps||0}${last.sets>1?" × "+last.sets:""} on ${last.date}`;
     const pb=bestE1RM(val);if(pb)hint+=`  ·  best est. 1RM ${fmt(Math.round(pb))}kg`;}
   $("wHint").textContent=hint;
-};
+}
+$("wExercise").addEventListener("change",applyExerciseSelection);
 $("wAddSet").onclick=()=>{
   const ex=$("wExercise").value.trim();
   if(!ex){toast("Enter an exercise");return;}
@@ -621,9 +651,7 @@ const FOOD_DB=[
 ];
 const r1=n=>Math.round(n*10)/10;
 function getFood(name){if(!name)return null;const k=name.trim().toLowerCase();return FOOD_DB.find(x=>x.n.toLowerCase()===k)||null;}
-function refreshFoodList(){
-  $("foodList").innerHTML=FOOD_DB.map(x=>`<option value="${esc(x.n)}">${x.cat} · ${x.kcal} kcal/100g</option>`).join("");
-}
+function refreshFoodList(){/* replaced by custom picker */}
 
 // ---- Meal builder ----
 let curItems=[];
@@ -643,14 +671,13 @@ function renderBuilder(){
 }
 window.rmBuilder=idx=>{curItems.splice(idx,1);renderBuilder();};
 
-$("nIng").oninput=()=>{
+function updateFoodHint(){
   const food=getFood($("nIng").value);
   $("nIngHint").textContent=food?`≈ ${food.kcal} kcal · ${food.p}g protein per 100g${food.sv?`  ·  typical serving ~${food.sv} g`:""}`:"";
-};
-$("nServing").onclick=()=>{
-  const food=getFood($("nIng").value);
-  if(food&&food.sv){$("nGrams").value=food.sv;}else toast("Pick a food first");
-};
+}
+$("nIng").addEventListener("change",updateFoodHint);
+window.servingMult=(m)=>{const food=getFood($("nIng").value);if(food&&food.sv){$("nGrams").value=Math.round(food.sv*m);}else toast("Pick a food first");};
+window.proteinBoost=(g)=>{curItems.push({name:`Extra protein +${g}g`,grams:null,kcal:g*4,p:g,c:0,f:0});renderBuilder();toast(`+${g}g protein added`);};
 $("nAddIng").onclick=()=>{
   const food=getFood($("nIng").value);
   if(!food){toast("Not in list — use 'Add custom food'");return;}
@@ -768,13 +795,14 @@ const DRINK_DB=[
 {n:"Soju (bottle 360ml 17%)",cat:"Other",std:4.0,kcal:430}
 ];
 function getDrink(name){if(!name)return null;const k=name.trim().toLowerCase();return DRINK_DB.find(x=>x.n.toLowerCase()===k)||null;}
-function refreshDrinkList(){$("drinkList").innerHTML=DRINK_DB.map(x=>`<option value="${esc(x.n)}">${x.cat} · ${x.std} std · ${x.kcal} kcal</option>`).join("");}
+function refreshDrinkList(){/* replaced by custom picker */}
 function dayDrinkCals(d){return db.drinks.filter(x=>x.date===d).reduce((s,x)=>s+x.cals,0);}
 
-$("aDrink").oninput=()=>{
+function updateDrinkHint(){
   const dr=getDrink($("aDrink").value);
   $("aHint").textContent=dr?`${dr.std} standard drink${dr.std===1?"":"s"} · ${dr.kcal} kcal each`:"";
-};
+}
+$("aDrink").addEventListener("change",updateDrinkHint);
 $("aAdd").onclick=()=>{
   const dr=getDrink($("aDrink").value);
   if(!dr){toast("Pick a drink, or use custom");return;}
@@ -1047,6 +1075,41 @@ function renderAll(){
   refreshExerciseList();refreshFoodList();refreshRecipes();renderBuilder();
   refreshRoutines();renderWorkoutBuilder();refreshDrinkList();renderAlcohol();
 }
+// ---- Searchable pickers (mobile-friendly replacement for datalist) ----
+function setupPicker(input,panel,dataFn,pickFn){
+  function render(){
+    const q=input.value.trim().toLowerCase();
+    const items=dataFn(q).slice(0,40);
+    if(!items.length){panel.innerHTML='<div class="picker-empty">No matches. Keep typing, or add a custom entry below.</div>';panel.classList.add("open");return;}
+    panel.innerHTML=items.map(it=>`<div class="picker-row" data-val="${esc(it.value)}"><span class="pname">${esc(it.value)}</span><span class="pmeta">${it.meta||""}</span></div>`).join("");
+    panel.classList.add("open");
+  }
+  input.addEventListener("focus",render);
+  input.addEventListener("input",render);
+  input.addEventListener("blur",()=>setTimeout(()=>panel.classList.remove("open"),250));
+  panel.addEventListener("click",e=>{
+    const row=e.target.closest(".picker-row");if(!row)return;
+    input.value=row.dataset.val;
+    panel.classList.remove("open");
+    pickFn();
+  });
+}
+function rankList(items,q,nameOf){
+  if(!q)return items;
+  return items.filter(x=>nameOf(x).toLowerCase().includes(q))
+    .sort((a,b)=>((nameOf(a).toLowerCase().startsWith(q)?0:1)-(nameOf(b).toLowerCase().startsWith(q)?0:1)));
+}
+setupPicker($("nIng"),$("nIngPanel"),
+  q=>rankList(FOOD_DB,q,x=>x.n).map(x=>({value:x.n,meta:`${x.cat} · ${x.kcal} kcal · ${x.p}g P`})),
+  updateFoodHint);
+setupPicker($("wExercise"),$("wExercisePanel"),
+  q=>{const past=db.workouts.map(w=>w.exercise);const names=[...new Set([...EXERCISE_DB.map(x=>x.n),...past])];
+    return rankList(names,q,n=>n).map(n=>{const e=getExercise(n);return {value:n,meta:e?`${e.muscle} · ${e.type}`:"Logged before"};});},
+  applyExerciseSelection);
+setupPicker($("aDrink"),$("aDrinkPanel"),
+  q=>rankList(DRINK_DB,q,x=>x.n).map(x=>({value:x.n,meta:`${x.cat} · ${x.std} std · ${x.kcal} kcal`})),
+  updateDrinkHint);
+
 loadGoals();renderAll();
 </script>
 </body>
